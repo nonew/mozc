@@ -44,6 +44,7 @@
 #include "base/logging.h"
 #include "base/port.h"
 #include "base/process.h"
+#include "base/system_util.h"
 #include "base/update_util.h"
 #include "base/util.h"
 #include "base/win_util.h"
@@ -606,9 +607,7 @@ class TipTextServiceImpl
     UninitKeyEventSink();
 
     // Remove our button menus from the language bar.
-    if (!IsImmersiveUI()) {
-      UninitLanguageBar();
-    }
+    UninitLanguageBar();
 
     // Stop advising the ITfFunctionProvider events.
     UninitFunctionProvider();
@@ -713,12 +712,10 @@ class TipTextServiceImpl
       return Deactivate();
     }
 
-    if (!IsImmersiveUI()) {
-      result = InitLanguageBar();
-      if (FAILED(result)) {
-        LOG(ERROR) << "InitLanguageBar failed: " << result;
-        return result;
-      }
+    result = InitLanguageBar();
+    if (FAILED(result)) {
+      LOG(ERROR) << "InitLanguageBar failed: " << result;
+      return result;
     }
 
     // Start advising the keyboard events (ITfKeyEvent) to this object.
@@ -1149,6 +1146,10 @@ class TipTextServiceImpl
     langbar_.UpdateMenu(enabled, mozc_mode);
   }
 
+  virtual bool IsLangbarInitialized() const {
+    return langbar_.IsInitialized();
+  }
+
   // Following functions are private utilities.
   static void StorePointerForCurrentThread(TipTextServiceImpl *impl) {
     if (g_module_unloaded) {
@@ -1307,6 +1308,12 @@ class TipTextServiceImpl
   }
 
   HRESULT InitLanguageBar() {
+    if (IsImmersiveUI() && !SystemUtil::IsWindows10OrLater()) {
+      // If the target window is in immersive mode on Windows 8/8.1, the
+      // Language Bar is always hidden hence we don't need to initialize it.
+      return S_FALSE;
+    }
+
     return langbar_.InitLangBar(this);
   }
 

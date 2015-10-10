@@ -152,6 +152,9 @@ class SystemUtil {
   // returns true if the version of Windows is 6.3 or later.
   static bool IsWindows8_1OrLater();
 
+  // returns true if the version of Windows is 10.0 or later.
+  static bool IsWindows10OrLater();
+
   // returns true if the version of Windows is x64 Edition.
   static bool IsWindowsX64();
 
