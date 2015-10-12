@@ -827,41 +827,6 @@ bool SystemUtil::IsWindows8_1OrLater() {
 #endif  // OS_WIN
 }
 
-#ifdef OS_WIN
-namespace {
-
-// This constant is not available in Windows 8.1 SDK.
-// TODO(yukawa): Remove this after updating Windows SDK.
-#ifndef _WIN32_WINNT_WIN10
-#define _WIN32_WINNT_WIN10  0x0a00
-#endif  // _WIN32_WINNT_WIN10
-
-bool IsWindows10OrLaterImpl() {
-  OSVERSIONINFOEX osvi = {};
-  osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-  osvi.dwMajorVersion = HIBYTE(_WIN32_WINNT_WIN10);
-  osvi.dwMinorVersion = LOBYTE(_WIN32_WINNT_WIN10);
-  DWORDLONG conditional = 0;
-  VER_SET_CONDITION(conditional, VER_MAJORVERSION, VER_GREATER_EQUAL);
-  VER_SET_CONDITION(conditional, VER_MINORVERSION, VER_GREATER_EQUAL);
-  const BOOL result = ::VerifyVersionInfo(
-      &osvi, VER_MAJORVERSION | VER_MINORVERSION, conditional);
-  return result != FALSE;
-}
-
-}  // namespace
-#endif  // OS_WIN
-
-bool SystemUtil::IsWindows10OrLater() {
-#ifdef OS_WIN
-  // TODO(yukawa): Use |IsWindows10OrGreater| after updating Windows SDK.
-  static const bool result = IsWindows10OrLaterImpl();
-  return result;
-#else
-  return false;
-#endif  // OS_WIN
-}
-
 namespace {
 volatile mozc::SystemUtil::IsWindowsX64Mode g_is_windows_x64_mode =
     mozc::SystemUtil::IS_WINDOWS_X64_DEFAULT_MODE;

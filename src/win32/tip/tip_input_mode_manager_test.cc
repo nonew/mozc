@@ -147,6 +147,32 @@ TEST(TipInputModeManagerImplTest, GetOverriddenState) {
   }
 }
 
+TEST(TipInputModeManagerTest, HandleFirstFocus) {
+  TipInputModeManager input_mode_manager(GetGlobalMode());
+
+  // Initialize (Off + Hiragana)
+  input_mode_manager.OnInitialize(false, kNativeHiragana);
+
+  // First SetFocus (Off + Hiragana)
+  vector<InputScope> input_scope_empty;
+  auto first_focus_action = input_mode_manager.OnSetFocus(
+      false, kNativeHiragana, input_scope_empty);
+  EXPECT_EQ(TipInputModeManager::kUpdateUI, first_focus_action);
+  EXPECT_FALSE(input_mode_manager.IsIndicatorVisible());
+  EXPECT_FALSE(input_mode_manager.GetEffectiveOpenClose());
+  EXPECT_EQ(TipInputModeManager::kHiragana,
+            input_mode_manager.GetEffectiveConversionMode());
+
+  // Second SetFocus (Off + Hiragana)
+  auto second_focus_action = input_mode_manager.OnSetFocus(
+      false, kNativeHiragana, input_scope_empty);
+  EXPECT_EQ(TipInputModeManager::kDoNothing, second_focus_action);
+  EXPECT_FALSE(input_mode_manager.IsIndicatorVisible());
+  EXPECT_FALSE(input_mode_manager.GetEffectiveOpenClose());
+  EXPECT_EQ(TipInputModeManager::kHiragana,
+            input_mode_manager.GetEffectiveConversionMode());
+}
+
 TEST(TipInputModeManagerTest, IgnoreConversionModeByGlobalConfig_Issue8583505) {
   // When per-session input mode is enabled, mode change notification from the
   // application should be ignored.
@@ -155,11 +181,11 @@ TEST(TipInputModeManagerTest, IgnoreConversionModeByGlobalConfig_Issue8583505) {
   // Initialize (Off + Hiragana)
   input_mode_manager.OnInitialize(false, kNativeHiragana);
 
-  // SetFocus (Off + Hiragana)
+  // Initial SetFocus (Off + Hiragana)
   vector<InputScope> input_scope_empty;
   auto action = input_mode_manager.OnSetFocus(
       false, kNativeHiragana, input_scope_empty);
-  EXPECT_EQ(TipInputModeManager::kDoNothing, action);
+  EXPECT_EQ(TipInputModeManager::kUpdateUI, action);
   EXPECT_FALSE(input_mode_manager.IsIndicatorVisible());
   EXPECT_FALSE(input_mode_manager.GetEffectiveOpenClose());
   EXPECT_EQ(TipInputModeManager::kHiragana,
@@ -192,11 +218,11 @@ TEST(TipInputModeManagerTest, HonorConversionMode_Issue8583505) {
   // Initialize (Off + Hiragana)
   input_mode_manager.OnInitialize(false, kNativeHiragana);
 
-  // SetFocus (Off + Hiragana)
+  // Initial SetFocus (Off + Hiragana)
   vector<InputScope> input_scope_empty;
   auto action = input_mode_manager.OnSetFocus(
       false, kNativeHiragana, input_scope_empty);
-  EXPECT_EQ(TipInputModeManager::kDoNothing, action);
+  EXPECT_EQ(TipInputModeManager::kUpdateUI, action);
   EXPECT_FALSE(input_mode_manager.IsIndicatorVisible());
   EXPECT_FALSE(input_mode_manager.GetEffectiveOpenClose());
   EXPECT_EQ(TipInputModeManager::kHiragana,
@@ -227,11 +253,11 @@ TEST(TipInputModeManagerTest, ChangeInputScope) {
   // Initialize (Off + Hiragana)
   input_mode_manager.OnInitialize(false, kNativeHiragana);
 
-  // SetFocus (Off + Hiragana)
+  // Initial SetFocus (Off + Hiragana)
   vector<InputScope> input_scope_empty;
   auto action = input_mode_manager.OnSetFocus(
       false, kNativeHiragana, input_scope_empty);
-  EXPECT_EQ(TipInputModeManager::kDoNothing, action);
+  EXPECT_EQ(TipInputModeManager::kUpdateUI, action);
   EXPECT_FALSE(input_mode_manager.IsIndicatorVisible());
   EXPECT_FALSE(input_mode_manager.GetEffectiveOpenClose());
   EXPECT_EQ(TipInputModeManager::kHiragana,

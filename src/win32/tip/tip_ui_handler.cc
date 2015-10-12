@@ -133,7 +133,7 @@ void TipUiHandler::OnActivate(TipTextService *text_service) {
   if (text_service->IsImmersiveUI()) {
     TipUiHandlerImmersive::OnActivate();
   } else {
-    TipUiHandlerConventional::OnActivate(text_service);
+    TipUiHandlerConventional::OnActivate();
   }
 }
 
