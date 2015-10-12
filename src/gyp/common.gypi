@@ -575,14 +575,15 @@
             # are built with /O2.  We use the same optimization option between
             # Mozc and Qt just in case warning C4748 is true.
             'Optimization': '<(win_optimization_release)',
-            'WholeProgramOptimization': 'true',
+            'WholeProgramOptimization': 'false',
           },
           'VCLibrarianTool': {
-            'LinkTimeCodeGeneration': 'true',
+            'LinkTimeCodeGeneration': 'false',
           },
           'VCLinkerTool': {
+            # 0 = 'LinkTimeCodeGenerationOptionDefault'
             # 1 = 'LinkTimeCodeGenerationOptionUse'
-            'LinkTimeCodeGeneration': '1',
+            'LinkTimeCodeGeneration': '0',
             # /PDBALTPATH is documented in Visual C++ 2010
             # http://msdn.microsoft.com/en-us/library/dd998269(VS.100).aspx
             'AdditionalOptions': ['/PDBALTPATH:%_PDB%'],
