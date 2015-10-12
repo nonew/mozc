@@ -40,4 +40,6 @@ build_script:
 - cd src
 - python build_mozc.py gyp --noqt
 - python build_mozc.py build -c Release package
-test: off
+test: on
+test_script:
+- python build_mozc.py runtests -c Release
