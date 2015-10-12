@@ -66,7 +66,7 @@ class NamedEventListenerThread: public Thread {
   }
 };
 
-TEST(NamedEventTest, NamedEventBasicTest) {
+TEST(NamedEventTest, DISABLED_NamedEventBasicTest) {
   SystemUtil::SetUserProfileDirectory(FLAGS_test_tmpdir);
 
   for (int i = 0; i < kNumRequests; ++i) {

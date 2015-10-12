@@ -114,7 +114,7 @@ TEST_F(IPCPathManagerTest, IPCPathManagerTest) {
 
 // Test the thread-safeness of GetPathName() and
 // GetIPCPathManager
-TEST_F(IPCPathManagerTest, IPCPathManagerBatchTest) {
+TEST_F(IPCPathManagerTest, DISABLED_IPCPathManagerBatchTest) {
   // mozc::Thread is not designed as value-semantics.
   // So here we use pointers to maintain these instances.
   vector<BatchGetPathNameThread *> threads(8192);
