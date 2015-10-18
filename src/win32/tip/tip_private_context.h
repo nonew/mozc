@@ -64,6 +64,7 @@ class TipPrivateContext {
   ~TipPrivateContext();
 
   client::ClientInterface *GetClient();
+  void EnsureInitialized();
   SurrogatePairObserver *GetSurrogatePairObserver();
   TipUiElementManager *GetUiElementManager();
   VKBackBasedDeleter *GetDeleter();
