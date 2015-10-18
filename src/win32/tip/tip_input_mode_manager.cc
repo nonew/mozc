@@ -128,10 +128,8 @@ TipInputModeManager::Config::Config()
 class TipInputModeManager::InternalState {
  public:
   InternalState()
-      : use_global_mode(false),
-        is_initial_setfocus(true) {}
+      : use_global_mode(false) {}
   bool use_global_mode;
-  bool is_initial_setfocus;
   StatePair mozc_state;
   StatePair tsf_state;
   IndicatorVisibilityTracker indicator_visibility_tracker;
@@ -239,8 +237,6 @@ TipInputModeManager::Action TipInputModeManager::OnSetFocus(
     const vector<InputScope> &input_scopes) {
   const StatePair prev_effective = state_->mozc_state;
 
-  const bool is_initial_setfocus = state_->is_initial_setfocus;
-  state_->is_initial_setfocus = false;
   state_->indicator_visibility_tracker.OnMoveFocusedWindow();
 
   vector<InputScope> new_input_scopes = input_scopes;
@@ -258,7 +254,7 @@ TipInputModeManager::Action TipInputModeManager::OnSetFocus(
   if (new_input_scopes.size() > 0 &&
       (new_input_scopes == state_->input_scope)) {
     // The same input scope is specified. Use the previous mode.
-    return is_initial_setfocus ? kUpdateUI : kDoNothing;
+    return kDoNothing;
   }
 
   swap(state_->input_scope, new_input_scopes);
@@ -269,7 +265,7 @@ TipInputModeManager::Action TipInputModeManager::OnSetFocus(
     state_->indicator_visibility_tracker.OnChangeInputMode();
     return kUpdateUI;
   }
-  return is_initial_setfocus ? kUpdateUI : kDoNothing;
+  return kDoNothing;
 }
 
 TipInputModeManager::Action

@@ -133,7 +133,7 @@ void TipUiHandler::OnActivate(TipTextService *text_service) {
   if (text_service->IsImmersiveUI()) {
     TipUiHandlerImmersive::OnActivate();
   } else {
-    TipUiHandlerConventional::OnActivate();
+    TipUiHandlerConventional::OnActivate(text_service);
   }
 }
 
@@ -143,6 +143,11 @@ void TipUiHandler::OnDeactivate(TipTextService *text_service) {
   } else {
     TipUiHandlerConventional::OnDeactivate();
   }
+}
+
+void TipUiHandler::OnDocumentMgrChanged(TipTextService *text_service,
+                                        ITfDocumentMgr *document_manager) {
+  UpdateLanguageBarOnFocusChange(text_service, document_manager);  
 }
 
 void TipUiHandler::OnFocusChange(TipTextService *text_service,

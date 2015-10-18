@@ -1179,6 +1179,7 @@ class TipTextServiceImpl
       }
       EnsurePrivateContextExists(context);
     }
+    TipUiHandler::OnDocumentMgrChanged(this, document_mgr);
     TipEditSession::OnSetFocusAsync(this, document_mgr);
     return S_OK;
   }
