@@ -69,8 +69,8 @@ bool GetConfigSnapshotForSandboxedProcess(ClientInterface *client,
   return true;
 }
 
-ConfigSnapshot GetConfigSnapshotForNonSandboxedProcess() {
-  Config config
+StaticConfigSnapshot GetConfigSnapshotForNonSandboxedProcess() {
+  Config config;
   // config1.db should be readable in this case.
   config.CopyFrom(config::ConfigHandler::GetConfig());
 
@@ -105,7 +105,7 @@ bool ConfigSnapshot::Get(client::ClientInterface *client, Info *info) {
   // TODO(yukawa): Cache the result once it succeeds.
   if (WinUtil::IsProcessSandboxed()) {
     Config config;
-    if (!GetConfigSnapshotForSandboxedProcess(config, client)) {
+    if (!GetConfigSnapshotForSandboxedProcess(client, &config)) {
       return false;
     }
     info->use_kana_input = (config.preedit_method() == Config::KANA);
@@ -117,7 +117,7 @@ bool ConfigSnapshot::Get(client::ClientInterface *client, Info *info) {
   }
 
   // Note: Thread-safety is not required.
-  const static ConfigSnapshot cached_snapshot =
+  const static StaticConfigSnapshot cached_snapshot =
       GetConfigSnapshotForNonSandboxedProcess();
   info->use_kana_input = cached_snapshot.use_kana_input;
   info->use_keyboard_to_change_preedit_method =

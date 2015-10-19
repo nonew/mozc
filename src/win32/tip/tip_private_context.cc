@@ -89,7 +89,7 @@ ClientInterface *TipPrivateContext::GetClient() {
 }
 
 void TipPrivateContext::EnsureInitialized() {
-  if (!state_->input_behavior_.initialized_) {
+  if (!state_->input_behavior_.initialized) {
     state_->client_->Reset();
 
     Capability capability;
@@ -106,7 +106,7 @@ void TipPrivateContext::EnsureInitialized() {
         snapshot.use_keyboard_to_change_preedit_method;
     behavior->use_mode_indicator = snapshot.use_mode_indicator;
     behavior->direct_mode_keys = snapshot.direct_mode_keys;
-    behavior>initialized = true;
+    behavior->initialized = true;
   }
 }
 
