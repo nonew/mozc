@@ -92,8 +92,16 @@ class NamedEventListenerThread : public Thread {
 
 class NamedEventTest : public testing::Test {
   virtual void SetUp() {
+    original_user_profile_directory_ = SystemUtil::GetUserProfileDirectory();
     SystemUtil::SetUserProfileDirectory(FLAGS_test_tmpdir);
   }
+
+  virtual void TearDown() {
+    SystemUtil::SetUserProfileDirectory(original_user_profile_directory_);
+  }
+
+ private:
+  string original_user_profile_directory_;
 };
 
 TEST_F(NamedEventTest, NamedEventBasicTest) {
