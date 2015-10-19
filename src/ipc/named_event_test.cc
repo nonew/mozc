@@ -29,6 +29,8 @@
 
 #include "ipc/named_event.h"
 
+#include <atomic>
+#include <memory>
 #include <string>
 
 #include "base/port.h"
@@ -40,48 +42,78 @@
 DECLARE_string(test_tmpdir);
 
 namespace mozc {
-
 namespace {
+
 const char kName[] = "named_event_test";
-const int kNumRequests = 5;
 
-class NamedEventNotifierThread: public Thread {
+class NamedEventListenerThread : public Thread {
  public:
-  void Run() {
-    Util::Sleep(100);
-    NamedEventNotifier n(kName);
+  NamedEventListenerThread(const string &name,
+                           uint32 initial_wait_msec,
+                           uint32 wait_msec,
+                           size_t max_num_wait)
+      : name_(name),
+        initial_wait_msec_(initial_wait_msec),
+        wait_msec_(wait_msec),
+        max_num_wait_(max_num_wait),
+        first_triggered_ticks_(0) {}
+
+  ~NamedEventListenerThread() override {}
+
+  void Run() override {
+    NamedEventListener n(name_.c_str());
     EXPECT_TRUE(n.IsAvailable());
-    Util::Sleep(500);
-    EXPECT_TRUE(n.Notify());
+    Util::Sleep(initial_wait_msec_);
+    for (size_t i = 0; i < max_num_wait_; ++i) {
+      const bool result = n.Wait(wait_msec_);
+      const uint64 ticks = Util::GetTicks();
+      if (result) {
+        first_triggered_ticks_ = ticks;
+        return;
+      }
+    }
+  }
+
+  uint64 first_triggered_ticks() const {
+    return first_triggered_ticks_;
+  }
+
+  bool IsTriggered() const {
+    return first_triggered_ticks() > 0;
+  }
+
+ private:
+  const string name_;
+  const uint32 initial_wait_msec_;
+  const uint32 wait_msec_;
+  const size_t max_num_wait_;
+  std::atomic<uint64> first_triggered_ticks_;
+};
+
+class NamedEventTest : public testing::Test {
+  virtual void SetUp() {
+    SystemUtil::SetUserProfileDirectory(FLAGS_test_tmpdir);
   }
 };
 
-class NamedEventListenerThread: public Thread {
- public:
-  void Run() {
-    NamedEventListener n(kName);
-    EXPECT_TRUE(n.IsAvailable());
-    EXPECT_FALSE(n.Wait(500));
-    EXPECT_TRUE(n.Wait(2000));
-  }
-};
+TEST_F(NamedEventTest, NamedEventBasicTest) {
+  NamedEventListenerThread listner(kName, 0, 50, 100);
+  listner.Start();
+  Util::Sleep(200);
 
-TEST(NamedEventTest, DISABLED_NamedEventBasicTest) {
-  SystemUtil::SetUserProfileDirectory(FLAGS_test_tmpdir);
+  NamedEventNotifier notifier(kName);
+  ASSERT_TRUE(notifier.IsAvailable());
+  const uint64 notify_ticks = Util::GetTicks();
+  notifier.Notify();
+  listner.Join();
 
-  for (int i = 0; i < kNumRequests; ++i) {
-    NamedEventNotifierThread t;
-    NamedEventListener l(kName);
-    EXPECT_TRUE(l.IsAvailable());
-    t.Start();
-    EXPECT_FALSE(l.Wait(200));
-    Util::Sleep(100);
-    EXPECT_TRUE(l.Wait(500));
-    t.Join();
+  // There is a chance that |listner| is not triggered.
+  if (listner.IsTriggered()) {
+    EXPECT_LT(notify_ticks, listner.first_triggered_ticks());
   }
 }
 
-TEST(NamedEventTest, IsAvailableTest) {
+TEST_F(NamedEventTest, IsAvailableTest) {
   {
     NamedEventListener l(kName);
     EXPECT_TRUE(l.IsAvailable());
@@ -96,47 +128,54 @@ TEST(NamedEventTest, IsAvailableTest) {
   }
 }
 
-TEST(NamedEventTest, IsOwnerTest) {
-  for (int i = 0; i < kNumRequests; ++i) {
-    NamedEventListener l1(kName);
-    EXPECT_TRUE(l1.IsOwner());
-    EXPECT_TRUE(l1.IsAvailable());
-    NamedEventListener l2(kName);
-    EXPECT_FALSE(l2.IsOwner());   // the instance is owneded by l1
-    EXPECT_TRUE(l2.IsAvailable());
-  }
+TEST_F(NamedEventTest, IsOwnerTest) {
+  NamedEventListener l1(kName);
+  EXPECT_TRUE(l1.IsOwner());
+  EXPECT_TRUE(l1.IsAvailable());
+  NamedEventListener l2(kName);
+  EXPECT_FALSE(l2.IsOwner());   // the instance is owneded by l1
+  EXPECT_TRUE(l2.IsAvailable());
 }
 
-TEST(NamedEventTest, NamedEventMultipleListenerTest) {
-  SystemUtil::SetUserProfileDirectory(FLAGS_test_tmpdir);
+TEST_F(NamedEventTest, NamedEventMultipleListenerTest) {
+  const size_t kNumRequests = 4;
 
   // mozc::Thread is not designed as value-semantics.
   // So here we use pointers to maintain these instances.
-  vector<NamedEventListenerThread *> t(kNumRequests);
-  for (int i = 0; i < kNumRequests; ++i) {
-    t[i] = new NamedEventListenerThread;
+  vector<std::unique_ptr<NamedEventListenerThread>> t(kNumRequests);
+  for (size_t i = 0; i < kNumRequests; ++i) {
+    t[i].reset(new NamedEventListenerThread(kName, 33 * i, 50, 100));
     t[i]->Start();
   }
 
+  Util::Sleep(200);
+
   // all |kNumRequests| listener events should be raised
   // at once with single notifier event
-  Util::Sleep(1000);
-  NamedEventNotifier n(kName);
-  EXPECT_TRUE(n.Notify());
+  NamedEventNotifier notifier(kName);
+  ASSERT_TRUE(notifier.IsAvailable());
+  const uint64 notify_ticks = Util::GetTicks();
+  ASSERT_TRUE(notifier.Notify());
 
-  for (int i = 0; i < kNumRequests; ++i) {
+  for (size_t i = 0; i < kNumRequests; ++i) {
     t[i]->Join();
-    delete t[i];
-    t[i] = NULL;
+  }
+
+  for (size_t i = 0; i < kNumRequests; ++i) {
+    // There is a chance that |listner| is not triggered.
+    if (t[i]->IsTriggered()) {
+      EXPECT_LT(notify_ticks, t[i]->first_triggered_ticks());
+    }
   }
 }
 
-TEST(NamedEventTest, NamedEventPathLengthTest) {
+TEST_F(NamedEventTest, NamedEventPathLengthTest) {
 #ifndef OS_WIN
   const string name_path = NamedEventUtil::GetEventPath(kName);
   // length should be less than 14 not includeing terminating null.
   EXPECT_EQ(13, strlen(name_path.c_str()));
 #endif  // OS_WIN
 }
+
 }  // namespace
 }  // namespace mozc
