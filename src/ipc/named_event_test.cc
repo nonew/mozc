@@ -52,20 +52,20 @@ class NamedEventListenerThread : public Thread {
                            uint32 initial_wait_msec,
                            uint32 wait_msec,
                            size_t max_num_wait)
-      : name_(name),
+      : listener_(name.c_str()),
         initial_wait_msec_(initial_wait_msec),
         wait_msec_(wait_msec),
         max_num_wait_(max_num_wait),
-        first_triggered_ticks_(0) {}
+        first_triggered_ticks_(0) {
+    EXPECT_TRUE(listener_.IsAvailable());
+  }
 
   ~NamedEventListenerThread() override {}
 
   void Run() override {
-    NamedEventListener n(name_.c_str());
-    EXPECT_TRUE(n.IsAvailable());
     Util::Sleep(initial_wait_msec_);
     for (size_t i = 0; i < max_num_wait_; ++i) {
-      const bool result = n.Wait(wait_msec_);
+      const bool result = listener_.Wait(wait_msec_);
       const uint64 ticks = Util::GetTicks();
       if (result) {
         first_triggered_ticks_ = ticks;
@@ -83,7 +83,7 @@ class NamedEventListenerThread : public Thread {
   }
 
  private:
-  const string name_;
+  NamedEventListener listener_;
   const uint32 initial_wait_msec_;
   const uint32 wait_msec_;
   const size_t max_num_wait_;
